@@ -1,3 +1,11 @@
+<div class="col-lg-12">
+    <hr>
+    <h2 class="intro-text text-render">{{ list_title}}</h2>
+    <hr class="detail-separator">
+</div>
+{% include 'store/search_form.html' %}
+
+
 {% if albums|length_is:"0" %}
 <div class="text-center">
     Impossible de trouver votre article. Merci de vous rediriger vers d'autre page.
@@ -18,4 +26,17 @@
 </div>
 {% if forloop.counter|divisibleby:3 %}<div class="clearfix"></div>{% endif %}
 {% endfor %}
+{% if paginate %}
+<div class="clearfix"></div>
+<nav aria-label="">
+    <ul class="pager">
+        {% if albums.has_previous %}
+        <li><a href="?page={{ albums.previous_page_number }}">Précédent</a></li>
+        {% endif %}
+        {% if albums.has_next %}
+        <li><a href="?page={{ albums.next_page_number }}">Suivant</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
 {% endif %}

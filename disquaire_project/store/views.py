@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
 # Create your views here.
 
 
 from .models import Album, Artist, Contact, Booking
-
+ 
 def index(request):
     albums = Album.objects.filter(available=True).order_by('-created_at')[:12]
     formatted_albums = ["<li>{}</li>".format(album.title) for album in albums]
@@ -15,12 +16,23 @@ def index(request):
     return render(request, 'store/index.html', context)
 
 def listing(request):
-    albums = Album.objects.filter(available=True)
-    context = {'albums': albums}
+    albums_list = Album.objects.filter(available=True)
+    paginator = Paginator(albums_list, 9)
+    page = request.GET.get('page')
+    try:
+        albums = paginator.page(page)
+    except PageNotAnInteger:
+        albums = paginator.page(1)
+    except EmptyPage:
+        albums = paginator.page(paginator.num_pages)
+    context = {
+        'albums': albums_list,
+        'paginate': True
+        }
     return render(request, 'store/listing.html', context)
 
 def detail(request, album_id):
-    album = Album.objects.get(pk=album_id)
+    album = get_object_or_404(Album, pk=album_id)
     artists_name = " ".join(artist.name for artist in album.artists.all())
     context = {
         'album_title': album.title,
