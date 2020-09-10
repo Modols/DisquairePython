@@ -8,7 +8,8 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
 
 from .models import Album, Artist, Contact, Booking
- 
+from .forms import ContactForm, ParagraphErrorList
+
 def index(request):
     albums = Album.objects.filter(available=True).order_by('-created_at')[:12]
     formatted_albums = ["<li>{}</li>".format(album.title) for album in albums]
@@ -33,15 +34,50 @@ def listing(request):
 
 def detail(request, album_id):
     album = get_object_or_404(Album, pk=album_id)
-    artists_name = " ".join(artist.name for artist in album.artists.all())
+    artists = [artist.name for artist in album.artists.all()]
+    artists_name = " ".join(artists)
     context = {
         'album_title': album.title,
         'artists_name': artists_name,
         'album_id': album.id,
         'thumbnail': album.picture
     }
-    return render(request, 'store/detail.html', context)
+    if request.method == 'POST':
+        form = ContactForm(request.POST, error_class=ParagraphErrorList)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            name = form.cleaned_data['name']
 
+            contact = Contact.objects.filter(email=email)
+            if not contact.exists():
+                # If a contact is not registered, create a new one.
+                contact = Contact.objects.create(
+                    email=email,
+                    name=name
+                )
+            else:
+                contact = contact.first()
+
+            album = get_object_or_404(Album, id=album_id)
+            booking = Booking.objects.create(
+                contact=contact,
+                album=album
+            )
+            album.available = False
+            album.save()
+            context = {
+                'album_title': album.title
+            }
+            return render(request, 'store/merci.html', context)
+        else:
+            # Form data doesn't match the expected format.
+            # Add errors to the template.
+            context['errors'] = form.errors.items()
+    else:
+        form = ContactForm()
+    context['form'] = form
+    return render(request, 'store/detail.html', context)  
+    
 def search(request):
     query = request.GET.get('query')
     if not query:
