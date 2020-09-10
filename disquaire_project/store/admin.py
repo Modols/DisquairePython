@@ -16,17 +16,20 @@ class AdminURLMixin(object):
             content_type.model),
         args=(obj.id,))
 
-class BookingInline(admin.TabularInline):
-    readonly_fields = ["created_at", "album", "contacted"]
+class BookingInline(admin.TabularInline, AdminURLMixin):
+    readonly_fields = ["created_at", "album_link", "contacted"]
     model = Booking
     fieldsets = [
-        (None, {'fields': ['album', 'contacted']})
+        (None, {'fields': ['album_link', 'contacted']})
         ]
     extra = 0
     verbose_name = "Réservation"
     verbose_name_plural = "Réservation"
     def has_add_permission(self, request):
         return False
+    def album_link(self, booking):
+        url = self.get_admin_url(booking.album)
+        return mark_safe("<a href='{}' > {} </a>".format(url, booking.album.title))
 
 class AlbumArtistInline(admin.TabularInline):
     model = Album.artists.through
@@ -51,11 +54,15 @@ class AlbumAdmin(admin.ModelAdmin):
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin, AdminURLMixin):
-    readonly_fields = ["created_at", "contact", "album_link", "contacted"]
+    readonly_fields = ["created_at", "contact_link", "album_link", "contacted"]
     list_filter = ['created_at', 'contacted']
 
     def has_add_permission(self, request):
         return False
+
+    def contact_link(self, booking):
+        url = self.get_admin_url(booking.contact)
+        return mark_safe("<a href='{}' > {} </a>".format(url, booking.contact.name))
 
     def album_link(self, booking):
         url = self.get_admin_url(booking.album)
